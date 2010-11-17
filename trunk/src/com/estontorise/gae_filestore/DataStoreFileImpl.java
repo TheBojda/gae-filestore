@@ -30,6 +30,8 @@ public class DataStoreFileImpl implements DataStoreFile {
 	 */
 	
 	public DataStoreFileImpl(String path, boolean create) {
+		if(path.startsWith("/"))
+			path = path.substring(1);
 		this.path = path;
 		if(create) {
 			recursiveCreatePath(getParentPath(path));
@@ -119,6 +121,8 @@ public class DataStoreFileImpl implements DataStoreFile {
 	}
 	
 	private void recursiveCreatePath(String dirPath) {
+		if(dirPath == null)
+			return;
 		Entity dirEntity = getFileEntity(dirPath);
 		if(dirEntity == null) {
 			String parent = getParentPath(dirPath);
@@ -159,9 +163,11 @@ public class DataStoreFileImpl implements DataStoreFile {
 
 	private Entity createFile(String path) throws FileNotFoundException {
 		String parent = getParentPath(path);
-		Entity parentEntity = getFileEntity(parent);
-		if(parentEntity == null)
-			throw new FileNotFoundException("Parent directory not found: " + getParentPath(path));
+		if(parent != null) {
+			Entity parentEntity = getFileEntity(parent);
+			if(parentEntity == null)
+				throw new FileNotFoundException("Parent directory not found: " + getParentPath(path));
+		}
 		Key fileKey = KeyFactory.createKey(FILE_KIND, path);
 		Entity fileEntity = new Entity(fileKey);
 		fileEntity.setProperty("type", "F");
