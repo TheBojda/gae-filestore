@@ -37,5 +37,9 @@ public class FilestoreTestServlet extends HttpServlet {
 		resp.getWriter().println(br.readLine());
 		
 		br.close();
+		
+		DataStoreFile dir = fileStore.getFile("foo/bar", false);
+		for(String fileName : dir.list())
+			resp.getWriter().println(fileName);
 	}
 }
