@@ -3,12 +3,18 @@ package com.estontorise.gae_filestore;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import com.estontorise.gae_filestore.interfaces.DataStoreFile;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.FilterOperator;
 
 public class DataStoreFileImpl implements DataStoreFile {
 
@@ -64,16 +70,31 @@ public class DataStoreFileImpl implements DataStoreFile {
 		return (Long)fileEntity.getProperty("last_mod");
 	}
 
+	private Iterable<Entity> getEntitiesByParent(String parent) {
+		Query query = new Query(FILE_KIND);
+		query.addFilter("parent", FilterOperator.EQUAL, path);
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		return datastore.prepare(query).asIterable();		
+	}
+	
 	@Override
 	public String[] list() {
-		// TODO Auto-generated method stub
-		return null;
+		List<String> result = new ArrayList<String>();
+		Iterable<Entity> entities = getEntitiesByParent(path);
+		for(Entity entity : entities) {
+			result.add(getFileName(entity.getKey().getName()));
+		}
+		return result.toArray(new String[]{});
 	}
 
 	@Override
 	public DataStoreFile[] listFiles() {
-		// TODO Auto-generated method stub
-		return null;
+		List<DataStoreFile> result = new ArrayList<DataStoreFile>();
+		Iterable<Entity> entities = getEntitiesByParent(path);
+		for(Entity entity : entities) {
+			result.add(new DataStoreFileImpl(entity.getKey().getName(), false));
+		}
+		return result.toArray(new DataStoreFile[]{});
 	}
 
 	@Override
@@ -87,6 +108,14 @@ public class DataStoreFileImpl implements DataStoreFile {
 		if(pos > -1)
 			return filePath.substring(0, pos);
 		return null;
+	}
+	
+	private String getFileName(String filePath) {
+		int pos = filePath.lastIndexOf("/");
+		if(pos > -1)
+			return filePath.substring(pos + 1);
+		else
+			return path;
 	}
 	
 	private void recursiveCreatePath(String dirPath) {
